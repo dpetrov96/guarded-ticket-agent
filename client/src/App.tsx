@@ -1,51 +1,73 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
-import { TenantSwitcher } from "@/components/TenantSwitcher";
-import { apiUrl } from "@/lib/api";
+import { ChatPanel } from "@/components/chat/ChatPanel";
+import { AppHeader } from "@/components/layout/AppHeader";
+import type { MobileView } from "@/components/layout/MobileViewTabs";
+import { TicketSidebar } from "@/components/tickets/TicketSidebar";
+import { findTenant, useTenants } from "@/hooks/useTenants";
 import type { TenantId } from "@/lib/tenant";
+import { cn } from "@/lib/utils";
 
 export default function App() {
-  const [tenantId, setTenantId] = useState<TenantId>("tenant-a");
-  const [serverStatus, setServerStatus] = useState<"checking" | "ok" | "error">(
-    "checking",
-  );
+  const { tenants, loading, error } = useTenants();
+  const [selectedTenantId, setSelectedTenantId] = useState<TenantId | null>(null);
+  const [mobileView, setMobileView] = useState<MobileView>("chat");
 
-  useEffect(() => {
-    fetch(apiUrl("/health"))
-      .then((res) => (res.ok ? setServerStatus("ok") : setServerStatus("error")))
-      .catch(() => setServerStatus("error"));
-  }, []);
+  // Derive the active tenant instead of syncing it via an effect.
+  const tenantId =
+    selectedTenantId && tenants.some((tenant) => tenant.id === selectedTenantId)
+      ? selectedTenantId
+      : (tenants[0]?.id ?? null);
+
+  if (loading) {
+    return (
+      <div className="app-shell flex h-dvh items-center justify-center text-[14px] text-muted-foreground">
+        Loading tenants…
+      </div>
+    );
+  }
+
+  if (error || tenants.length === 0 || !tenantId) {
+    return (
+      <div className="app-shell flex h-dvh items-center justify-center px-6 text-center text-[14px] text-muted-foreground">
+        {error ?? "No tenants available. Is the API server running?"}
+      </div>
+    );
+  }
+
+  const activeTenant = findTenant(tenants, tenantId);
+  if (!activeTenant) {
+    return null;
+  }
 
   return (
-    <div className="mx-auto flex min-h-screen w-full max-w-4xl flex-col gap-6 p-6">
-      <header className="flex flex-col gap-4 border-b pb-6 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">
-            Guarded Ticket Agent
-          </h1>
-          <p className="text-sm text-muted-foreground">
-            React + Express · multi-tenant tool-use with human approval
-          </p>
-        </div>
-        <TenantSwitcher value={tenantId} onChange={setTenantId} />
-      </header>
+    <div className="app-shell flex h-dvh flex-col overflow-hidden">
+      <AppHeader
+        tenants={tenants}
+        tenantId={tenantId}
+        onTenantChange={setSelectedTenantId}
+        mobileView={mobileView}
+        onMobileViewChange={setMobileView}
+      />
 
-      <main className="flex flex-1 flex-col gap-4 rounded-xl border bg-card p-6">
-        <p className="text-sm text-muted-foreground">
-          Active tenant: <span className="font-medium text-foreground">{tenantId}</span>
-        </p>
-        <p className="text-sm text-muted-foreground">
-          Server:{" "}
-          <span className="font-medium text-foreground">
-            {serverStatus === "checking" && "checking…"}
-            {serverStatus === "ok" && "connected"}
-            {serverStatus === "error" && "unreachable — run npm run dev from project root"}
-          </span>
-        </p>
-        <div className="mt-auto rounded-lg border border-dashed p-8 text-center text-sm text-muted-foreground">
-          Chat UI (assistant-ui) and tool-call trace will be added in the next phase.
-        </div>
-      </main>
+      <div className="mx-auto flex min-h-0 w-full max-w-6xl flex-1 flex-col lg:flex-row lg:gap-5 lg:px-6 lg:py-4">
+        <TicketSidebar
+          tenant={activeTenant}
+          className={cn(
+            "min-h-0 flex-1 lg:flex-none",
+            mobileView === "tickets" ? "flex" : "hidden lg:flex",
+          )}
+        />
+
+        <main
+          className={cn(
+            "flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-card lg:surface lg:rounded-xl",
+            mobileView === "chat" ? "flex" : "hidden lg:flex",
+          )}
+        >
+          <ChatPanel tenant={activeTenant} />
+        </main>
+      </div>
     </div>
   );
 }

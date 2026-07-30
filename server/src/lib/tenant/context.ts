@@ -1,3 +1,4 @@
+import { formatAllowedTenants } from "./meta.js";
 import { isTenantId, type TenantId } from "./types.js";
 
 type TenantResult =
@@ -21,7 +22,7 @@ export function getTenantId(headers: Record<string, unknown>): TenantResult {
     return {
       ok: false,
       status: 400,
-      error: `Invalid tenant. Allowed: tenant-a, tenant-b`,
+      error: `Invalid tenant. Allowed: ${formatAllowedTenants()}`,
     };
   }
 

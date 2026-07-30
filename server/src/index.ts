@@ -1,9 +1,11 @@
-import "dotenv/config";
+import "./load-env.js";
 import cors from "cors";
 import express from "express";
 
 import { config } from "./lib/config.js";
 import { chatRouter } from "./routes/chat.js";
+import { tenantsRouter } from "./routes/tenants.js";
+import { ticketsRouter } from "./routes/tickets.js";
 
 const app = express();
 
@@ -19,10 +21,16 @@ app.use(
 app.use(express.json({ limit: "1mb" }));
 
 app.get("/health", (_req, res) => {
-  res.json({ status: "ok", env: config.nodeEnv });
+  res.json({
+    status: "ok",
+    env: config.nodeEnv,
+    chatConfigured: Boolean(config.geminiApiKey),
+  });
 });
 
 app.use("/api", chatRouter);
+app.use("/api", tenantsRouter);
+app.use("/api", ticketsRouter);
 
 app.listen(config.port, "0.0.0.0", () => {
   console.log(`Server listening on http://0.0.0.0:${config.port}`);

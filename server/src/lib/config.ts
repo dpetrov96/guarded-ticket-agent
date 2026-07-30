@@ -14,6 +14,9 @@ export const config = {
   port: Number(process.env.PORT ?? 4001),
   allowedOrigins: parseAllowedOrigins(process.env.ALLOWED_ORIGINS),
   geminiApiKey: process.env.GOOGLE_GENERATIVE_AI_API_KEY,
+  // flash-lite has the most generous free-tier quota and supports tool calling;
+  // each chat turn costs 2+ requests (tool loop), so quota matters for the demo.
+  geminiModel: process.env.GEMINI_MODEL ?? "gemini-flash-lite-latest",
   isProduction: (process.env.NODE_ENV ?? "development") === "production",
 } as const;
 

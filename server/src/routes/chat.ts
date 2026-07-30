@@ -1,10 +1,12 @@
 import { Router } from "express";
+import type { UIMessage } from "ai";
 
 import { getTenantId } from "../lib/tenant/context.js";
+import { handleChatRequestSafe } from "./chat-handler.js";
 
 export const chatRouter = Router();
 
-chatRouter.post("/chat", (req, res) => {
+chatRouter.post("/chat", async (req, res) => {
   const tenantResult = getTenantId(req.headers);
 
   if (!tenantResult.ok) {
@@ -12,9 +14,12 @@ chatRouter.post("/chat", (req, res) => {
     return;
   }
 
-  // Streaming chat + tools will be wired in the next phase.
-  res.status(501).json({
-    error: "Chat endpoint not implemented yet",
-    tenantId: tenantResult.tenantId,
-  });
+  const { messages } = req.body as { messages?: UIMessage[] };
+
+  if (!Array.isArray(messages)) {
+    res.status(400).json({ error: "Expected messages array in request body" });
+    return;
+  }
+
+  await handleChatRequestSafe(res, tenantResult.tenantId, messages);
 });

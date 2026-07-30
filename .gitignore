@@ -9,6 +9,9 @@ node_modules/
 # Build outputs
 dist/
 build/
+.vite-cache/
+.vite-user-cache/
+.cache/
 .next/
 *.tsbuildinfo
 
