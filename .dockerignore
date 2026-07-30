@@ -1,0 +1,30 @@
+# Dependencies
+node_modules
+npm-debug.log*
+
+# Build outputs
+dist
+build
+.next
+*.tsbuildinfo
+
+# Environment & secrets
+.env
+.env.*
+!.env.example
+
+# Git & IDE
+.git
+.gitignore
+.idea
+.vscode
+*.md
+!README.md
+
+# Tests & local tooling
+coverage
+**/*.test.ts
+**/tests
+
+# Docker
+docker-compose*.yml

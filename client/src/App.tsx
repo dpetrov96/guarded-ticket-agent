@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 
 import { TenantSwitcher } from "@/components/TenantSwitcher";
+import { apiUrl } from "@/lib/api";
 import type { TenantId } from "@/lib/tenant";
 
 export default function App() {
@@ -10,7 +11,7 @@ export default function App() {
   );
 
   useEffect(() => {
-    fetch("/health")
+    fetch(apiUrl("/health"))
       .then((res) => (res.ok ? setServerStatus("ok") : setServerStatus("error")))
       .catch(() => setServerStatus("error"));
   }, []);
