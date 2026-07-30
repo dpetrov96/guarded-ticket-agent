@@ -1,10 +1,11 @@
 import { MessageSquare } from "lucide-react";
 
-import { useChatSend } from "@/components/chat/ChatSendContext";
+import { useChatContext } from "@/components/chat/ChatContext";
 import type { TenantSummary } from "@/lib/tenant";
 
 function SuggestedPrompts({ prompts }: { prompts: string[] }) {
-  const { sendMessage, isRunning } = useChatSend();
+  const { sendUserMessage, status } = useChatContext();
+  const isRunning = status === "streaming" || status === "submitted";
 
   return (
     <div className="flex flex-wrap justify-center gap-2">
@@ -13,7 +14,7 @@ function SuggestedPrompts({ prompts }: { prompts: string[] }) {
           key={prompt}
           type="button"
           disabled={isRunning}
-          onClick={() => sendMessage(prompt)}
+          onClick={() => sendUserMessage(prompt)}
           className="rounded-lg border border-border bg-card px-4 py-2.5 text-[14px] text-foreground transition hover:border-primary/30 hover:bg-accent disabled:cursor-not-allowed disabled:opacity-50"
         >
           {prompt}

@@ -1,13 +1,10 @@
-import { ComposerPrimitive, ThreadPrimitive } from "@assistant-ui/react";
 import { AlertTriangle, ArrowUp } from "lucide-react";
-import { useState } from "react";
+import { useCallback, useState } from "react";
 
-import {
-  AssistantMessage,
-  UserMessage,
-} from "@/components/chat/ChatMessages";
+import { useChatContext } from "@/components/chat/ChatContext";
 import { ChatEmptyState } from "@/components/chat/ChatEmptyState";
-import { useChatSend } from "@/components/chat/ChatSendContext";
+import { ChatMessageList } from "@/components/chat/ChatMessageList";
+import { useRefreshOnTicketMutations } from "@/hooks/useRefreshOnTicketMutations";
 import type { TenantSummary } from "@/lib/tenant";
 import { cn } from "@/lib/utils";
 
@@ -15,24 +12,19 @@ type ChatThreadProps = {
   tenant: TenantSummary;
 };
 
-function ChatError() {
-  const { error } = useChatSend();
-
-  if (!error) {
-    return null;
-  }
-
+function ChatError({ message }: { message: string }) {
   return (
     <div className="mb-3 flex items-start gap-2.5 rounded-lg border border-red-200 bg-red-50 px-3.5 py-2.5 text-[13px] leading-relaxed text-red-800">
       <AlertTriangle className="mt-0.5 size-4 shrink-0" />
-      <span className="break-words">{error}</span>
+      <span className="break-words">{message}</span>
     </div>
   );
 }
 
 function ChatComposer() {
-  const { sendMessage, isRunning } = useChatSend();
+  const { sendUserMessage, status } = useChatContext();
   const [text, setText] = useState("");
+  const isRunning = status === "streaming" || status === "submitted";
   const canSend = text.trim().length > 0 && !isRunning;
 
   const handleSend = () => {
@@ -41,12 +33,12 @@ function ChatComposer() {
       return;
     }
 
-    sendMessage(message);
+    sendUserMessage(message);
     setText("");
   };
 
   return (
-    <ComposerPrimitive.Root
+    <form
       className="flex items-end gap-2"
       onSubmit={(event) => {
         event.preventDefault();
@@ -78,31 +70,61 @@ function ChatComposer() {
       >
         <ArrowUp className="size-4" strokeWidth={2.25} />
       </button>
-    </ComposerPrimitive.Root>
+    </form>
   );
 }
 
 export function ChatThread({ tenant }: ChatThreadProps) {
+  const { messages, status, error, addToolApprovalResponse } = useChatContext();
+  useRefreshOnTicketMutations(messages);
+  const isRunning = status === "streaming" || status === "submitted";
+
+  const handleApprove = useCallback(
+    (approvalId: string) => {
+      void addToolApprovalResponse({ id: approvalId, approved: true });
+    },
+    [addToolApprovalResponse],
+  );
+
+  const handleDeny = useCallback(
+    (approvalId: string) => {
+      void addToolApprovalResponse({
+        id: approvalId,
+        approved: false,
+        reason: "User denied the mutation",
+      });
+    },
+    [addToolApprovalResponse],
+  );
+
   return (
-    <ThreadPrimitive.Root className="flex min-h-0 flex-1 flex-col">
-      <ThreadPrimitive.Viewport className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-4 sm:px-6 sm:py-6">
-        <ThreadPrimitive.Empty>
+    <div className="flex min-h-0 flex-1 flex-col">
+      <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-4 sm:px-6 sm:py-6">
+        {messages.length === 0 ? (
           <ChatEmptyState tenant={tenant} />
-        </ThreadPrimitive.Empty>
-        <ThreadPrimitive.Messages>
-          {({ message }) =>
-            message.role === "user" ? <UserMessage /> : <AssistantMessage />
-          }
-        </ThreadPrimitive.Messages>
-      </ThreadPrimitive.Viewport>
+        ) : (
+          <ChatMessageList
+            messages={messages}
+            onApprove={handleApprove}
+            onDeny={handleDeny}
+          />
+        )}
+        {isRunning ? (
+          <div className="mt-4 flex justify-start">
+            <div className="rounded-xl border border-border bg-card px-4 py-3 text-muted-foreground">
+              <span className="inline-block size-2 animate-pulse rounded-full bg-primary" />
+            </div>
+          </div>
+        ) : null}
+      </div>
 
       <div className="relative z-10 shrink-0 border-t border-border bg-card px-4 py-3 sm:px-6 sm:py-4">
-        <ChatError />
+        {status === "error" && error ? <ChatError message={error.message} /> : null}
         <ChatComposer />
         <p className="mt-2 hidden text-center text-[13px] text-muted-foreground sm:block">
           Mutations require approval. Tenant scope is enforced at the tool layer.
         </p>
       </div>
-    </ThreadPrimitive.Root>
+    </div>
   );
 }

@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 
+import { useTicketRefresh } from "@/context/TicketRefreshContext";
 import { fetchTenants, type TenantId, type TenantSummary } from "@/lib/tenant";
 
 type UseTenantsResult = {
@@ -9,6 +10,7 @@ type UseTenantsResult = {
 };
 
 export function useTenants(): UseTenantsResult {
+  const { version } = useTicketRefresh();
   const [tenants, setTenants] = useState<TenantSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -38,7 +40,7 @@ export function useTenants(): UseTenantsResult {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [version]);
 
   return { tenants, loading, error };
 }

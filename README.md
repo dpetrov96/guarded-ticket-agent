@@ -30,7 +30,7 @@ npm run dev
 flowchart TB
   subgraph client [React Client]
     TenantSwitcher[Tenant Switcher]
-    ChatUI[assistant-ui Chat]
+    ChatUI[useChat stream UI]
     ToolTrace[Tool Call Trace]
     ApprovalModal[Approval Modal]
   end
@@ -68,7 +68,7 @@ Security is enforced in **code**, not in prompts alone. Defense in depth, from h
    `tenantId` comes only from the `X-Tenant-ID` header, is validated against the known tenant list, and is baked into each tool via closure when the tools are constructed per-request. The model has no input parameter that can widen scope — `search_tickets` only ever queries `TicketStore` with the caller's tenant, so the LLM never receives another tenant's data to reason about in the first place.
 
 2. **Approval gate on the tool itself (hard)**  
-   `mutate_ticket` is declared with `needsApproval: true` on the tool definition. The AI SDK halts the run and emits an approval request instead of calling `execute()` — wherever this tool is registered, the gate travels with it. The UI renders a blocking modal; approve/deny is sent back via assistant-ui's `respondToApproval`, and only then does the server execute. No prompt text (user- or attacker-authored) can skip this, because the gate lives outside the model.
+   `mutate_ticket` is declared with `needsApproval: true` on the tool definition. The AI SDK halts the run and emits an approval request instead of calling `execute()`. The UI renders a blocking modal; approve/deny is sent back via `addToolApprovalResponse`, and only then does the server execute.
 
 3. **Re-validation on execute (hard)**  
    Even after approval, `TicketStore.update/delete` resolves the ticket **within the caller's tenant only** (by internal id or display id like `MER-101`), and update fields can never overwrite `id`, `displayId`, or `tenantId`.
@@ -87,7 +87,7 @@ Some seeded tickets contain adversarial text (e.g. "ignore prior instructions", 
 ## Project structure
 
 ```
-client/                 React + Vite + assistant-ui
+client/                 React + Vite + AI SDK useChat
 server/
   src/lib/tickets/      TicketStore + seed data
   src/lib/tools/        search_tickets, mutate_ticket

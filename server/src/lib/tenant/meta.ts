@@ -1,3 +1,4 @@
+import { buildSuggestedPrompts } from "./suggested-prompts.js";
 import type { TenantId } from "./types.js";
 import { TENANTS } from "./types.js";
 
@@ -9,28 +10,19 @@ export type TenantMeta = {
   suggestedPrompts: string[];
 };
 
-export const TENANT_META: Record<TenantId, Omit<TenantMeta, "id">> = {
+export const TENANT_META: Record<
+  TenantId,
+  Omit<TenantMeta, "id" | "suggestedPrompts">
+> = {
   "tenant-a": {
     label: "Meridian",
     corpName: "Meridian Systems",
     prefix: "MER",
-    suggestedPrompts: [
-      "Show me all open tickets",
-      "Delete MER-103",
-      "Close MER-102 and set priority high",
-      "Delete GLX-47",
-    ],
   },
   "tenant-b": {
     label: "Globex",
     corpName: "Globex Industries",
     prefix: "GLX",
-    suggestedPrompts: [
-      "Show me all open tickets",
-      "What's the status of GLX-47?",
-      "Close GLX-201",
-      "Delete MER-101",
-    ],
   },
 };
 
@@ -38,11 +30,16 @@ export function listTenants(): TenantMeta[] {
   return TENANTS.map((id) => ({
     id,
     ...TENANT_META[id],
+    suggestedPrompts: buildSuggestedPrompts(id),
   }));
 }
 
 export function getTenantMeta(tenantId: TenantId): TenantMeta {
-  return { id: tenantId, ...TENANT_META[tenantId] };
+  return {
+    id: tenantId,
+    ...TENANT_META[tenantId],
+    suggestedPrompts: buildSuggestedPrompts(tenantId),
+  };
 }
 
 export function formatAllowedTenants(): string {
