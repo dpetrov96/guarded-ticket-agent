@@ -2,6 +2,9 @@
 
 Multi-tenant chat agent: `search_tickets` (read-only) + `mutate_ticket` (update/delete with UI approval).
 
+<img width="1470" height="837" alt="image" src="https://github.com/user-attachments/assets/ce2cb888-5ef8-4281-a4da-315f009ddf63" />
+
+
 ## Run
 
 ```bash
