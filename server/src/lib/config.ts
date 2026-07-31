@@ -9,6 +9,11 @@ function parseAllowedOrigins(raw: string | undefined): string[] {
     .filter(Boolean);
 }
 
+function parsePositiveInt(raw: string | undefined, fallback: number): number {
+  const value = Number(raw);
+  return Number.isFinite(value) && value > 0 ? value : fallback;
+}
+
 export const config = {
   nodeEnv: process.env.NODE_ENV ?? "development",
   port: Number(process.env.PORT ?? 4001),
@@ -18,6 +23,11 @@ export const config = {
   // each chat turn costs 2+ requests (tool loop), so quota matters for the demo.
   geminiModel: process.env.GEMINI_MODEL ?? "gemini-flash-lite-latest",
   isProduction: (process.env.NODE_ENV ?? "development") === "production",
+  chatRateLimitMax: parsePositiveInt(process.env.CHAT_RATE_LIMIT_MAX, 30),
+  chatRateLimitWindowMs: parsePositiveInt(
+    process.env.CHAT_RATE_LIMIT_WINDOW_MS,
+    15 * 60 * 1000,
+  ),
 } as const;
 
 export function requireGeminiApiKey(): string {

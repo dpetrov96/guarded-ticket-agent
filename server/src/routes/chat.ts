@@ -1,12 +1,13 @@
 import { Router } from "express";
 import type { UIMessage } from "ai";
 
+import { chatRateLimiter } from "../lib/http/chat-rate-limit.js";
 import { getTenantId } from "../lib/tenant/context.js";
 import { handleChatRequestSafe } from "./chat-handler.js";
 
 export const chatRouter = Router();
 
-chatRouter.post("/chat", async (req, res) => {
+chatRouter.post("/chat", chatRateLimiter, async (req, res) => {
   const tenantResult = getTenantId(req.headers);
 
   if (!tenantResult.ok) {
